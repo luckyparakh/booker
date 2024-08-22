@@ -3,6 +3,11 @@ import uuid
 from datetime import datetime
 
 
+class UserLogin(BaseModel):
+    email: EmailStr = Field(max_length=40)
+    password: str = Field(min_length=6)
+
+
 class UserCreateSchema(BaseModel):
     email: EmailStr = Field(max_length=40)
     password: str = Field(min_length=6)
