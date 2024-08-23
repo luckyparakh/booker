@@ -19,7 +19,7 @@ app = FastAPI(
     version=version,
     title="Books API",
     description="A simple API to manage books",
-    lifespan=life_span
+    # lifespan=life_span
 )
 
 app.include_router(book_router, prefix=api_prefix)

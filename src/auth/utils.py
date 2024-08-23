@@ -21,12 +21,14 @@ def verify_password(plain_password, hashed_password) -> bool:
 
 
 def create_token(data: dict, expiry: timedelta = None, refresh: bool = False):
-    to_encode = data.copy()
+    to_encode={}
+    to_encode["user"] = data.copy()
     expires = datetime.now(
         timezone.utc) + (expiry if expiry else timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
     to_encode.update({"exp": expires})
     to_encode.update({"jti": str(uuid.uuid4())})
     to_encode.update({"refresh": refresh})
+    
     return jwt.encode(to_encode, SECRET_KEY, ALGORITHM)
 
 
