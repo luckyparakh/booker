@@ -9,7 +9,7 @@ import logging
 from src.db.redis import token_in_blocklist
 from sqlmodel.ext.asyncio.session import AsyncSession
 from typing import List, Any
-from .models import User
+from src.db.models import User
 
 user_service = UserService()
 

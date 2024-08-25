@@ -3,6 +3,7 @@ import uuid
 from datetime import datetime
 from typing import List
 from src.books.schema import BookResponse
+from src.db.models import Review
 
 
 class UserLogin(BaseModel):
@@ -28,4 +29,6 @@ class UserSchema(BaseModel):
     is_verified: bool
     created_at: datetime
     updated_at: datetime
+class UserBooks(UserSchema):
     books: List[BookResponse]
+    review: List[Review]

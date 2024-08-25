@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends,  HTTPException, status
-from .schema import UserCreateSchema, UserSchema, UserLogin
+from .schema import UserCreateSchema, UserSchema, UserLogin, UserBooks
 from sqlmodel.ext.asyncio.session import AsyncSession
 from src.db.main import get_session
 from .service import UserService
@@ -77,6 +77,6 @@ async def logout(token_data: dict = Depends(AccessTokenBearer())):
     return JSONResponse(content={"message": "Logged out successfully"})
 
 
-@auth_router.get("/me", response_model=UserSchema)
+@auth_router.get("/me", response_model=UserBooks)
 async def profile(user=Depends(get_user), _: bool = Depends(role_checker)):
     return user
