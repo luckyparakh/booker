@@ -10,6 +10,8 @@ from src.db.redis import token_in_blocklist
 from sqlmodel.ext.asyncio.session import AsyncSession
 from typing import List, Any
 from src.db.models import User
+from src.errors import (InvalidToken, RevokedToken,
+                        AccessTokenRequired, RefreshTokenRequired, InsufficientPermission)
 
 user_service = UserService()
 
@@ -25,11 +27,9 @@ class TokenBearer(HTTPBearer):
         # {'email': 'rp@gmail.com', 'uid': '52f45fd6-8735-411b-81f1-7ea9c1520353', 'exp': 1724302963, 'jti': '4f461ff6-355b-421f-9c74-0646df1c73ab', 'refresh': False}
         token = verify_token(creds.credentials)
         if token is None:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, detail="Invalid token")
+            raise InvalidToken()
         if await token_in_blocklist(token.get("jti")):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, detail="Token has been revoked")
+            raise RevokedToken()
 
         self.verify_token_data(token)
         # print("******************************Token", token)
@@ -43,16 +43,14 @@ class TokenBearer(HTTPBearer):
 class AccessTokenBearer(TokenBearer):
     def verify_token_data(self, token_data: dict) -> None:
         if token_data and token_data.get("refresh"):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, detail="Not a access token")
+            raise AccessTokenRequired()
         return None
 
 
 class RefreshTokenBearer(TokenBearer):
     def verify_token_data(self, token_data: dict) -> None:
         if token_data and not token_data.get("refresh"):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, detail="Not a refresh token")
+            raise RefreshTokenRequired()
         return None
 
 
@@ -69,5 +67,4 @@ class RoleChecker:
     def __call__(self, current_user: User = Depends(get_user)) -> Any:
         if current_user.role in self.allowed_roles:
             return True
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
-                            detail="You are not permitted to perform this action")
+        raise InsufficientPermission()

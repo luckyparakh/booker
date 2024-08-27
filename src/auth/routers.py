@@ -9,6 +9,7 @@ from .dependencies import RefreshTokenBearer, AccessTokenBearer
 from fastapi.responses import JSONResponse
 from src.db.redis import add_jti_to_blocklist
 from .dependencies import get_user, RoleChecker
+from src.errors import UserAlreadyExists, UserNotFound, InvalidCredentials
 
 auth_router = APIRouter(
     prefix="/auth",
@@ -26,8 +27,7 @@ async def create_user(data: UserCreateSchema, session: AsyncSession = Depends(ge
     email_id = data.email
     user_exist = await user_service.get_user_by_email(email_id, session)
     if user_exist:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
-                            detail=f"User with Email ID:{email_id} is present.")
+        raise UserAlreadyExists()
     new_user = await user_service.create_user(data, session)
     return new_user
 
@@ -37,11 +37,9 @@ async def create_user(data: UserLogin, session: AsyncSession = Depends(get_sessi
     email_id = data.email
     user_exist = await user_service.get_user_by_email(email_id, session)
     if not user_exist:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail="User with these details is not present.")
+        raise UserNotFound()
     if not verify_password(data.password, user_exist.password_hash):
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail="User with these details is not present.")
+        raise UserNotFound()
     access_token = create_token(
         data={"email": user_exist.email, "user_id": str(user_exist.uid), "role": user_exist.role})
     refresh_token = create_token(
