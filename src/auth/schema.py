@@ -29,6 +29,14 @@ class UserSchema(BaseModel):
     is_verified: bool
     created_at: datetime
     updated_at: datetime
+
+
 class UserBooks(UserSchema):
     books: List[BookResponse]
     review: List[Review]
+
+
+class EmailModel(BaseModel):
+    emails: List[str]
+    # subject: str
+    # body: str

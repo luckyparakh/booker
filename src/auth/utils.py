@@ -4,11 +4,13 @@ import jwt
 from src.config import settings
 import uuid
 import logging
+from itsdangerous import URLSafeTimedSerializer
 
 SECRET_KEY = settings.SECRET_KEY
 ALGORITHM = settings.ALGORITHM
 ACCESS_TOKEN_EXPIRE_MINUTES = 15
-
+salt_value = "email-verification"
+serializer = URLSafeTimedSerializer(SECRET_KEY, salt=salt_value)
 pwd_context = CryptContext(schemes=["bcrypt"])
 
 
@@ -21,14 +23,14 @@ def verify_password(plain_password, hashed_password) -> bool:
 
 
 def create_token(data: dict, expiry: timedelta = None, refresh: bool = False):
-    to_encode={}
+    to_encode = {}
     to_encode["user"] = data.copy()
     expires = datetime.now(
         timezone.utc) + (expiry if expiry else timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
     to_encode.update({"exp": expires})
     to_encode.update({"jti": str(uuid.uuid4())})
     to_encode.update({"refresh": refresh})
-    
+
     return jwt.encode(to_encode, SECRET_KEY, ALGORITHM)
 
 
@@ -42,6 +44,20 @@ def verify_token(token: str):
     except jwt.InvalidTokenError:
         logging.error("Invalid token")
         return None
+    except Exception as e:
+        logging.error(e)
+        return None
+
+
+def create_url_safe_token(data: dict):
+
+    token = serializer.dumps(data, salt=salt_value)
+    return token
+
+
+def decode_url_safe_token(token: str):
+    try:
+        return serializer.loads(token, salt=salt_value)
     except Exception as e:
         logging.error(e)
         return None

@@ -1,3 +1,11 @@
 python -m venv env
 source env/bin/activate
 fastapi dev
+
+
+To run SMTP server 'python -m smtpd -n -c DebuggingServer localhost:2500'
+MAIL_USERNAME="admin"
+MAIL_SERVER="localhost" #"smtp.gmail.com"
+MAIL_PORT=465 #587
+MAIL_FROM="no-reply@booker.com"
+MAIL_FROM_NAME="Booker"

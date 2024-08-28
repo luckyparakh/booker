@@ -1,15 +1,17 @@
 from fastapi import APIRouter, Depends,  HTTPException, status
-from .schema import UserCreateSchema, UserSchema, UserLogin, UserBooks
+from .schema import UserCreateSchema, UserSchema, UserLogin, UserBooks, EmailModel
 from sqlmodel.ext.asyncio.session import AsyncSession
 from src.db.main import get_session
 from .service import UserService
-from .utils import create_token, verify_password
+from .utils import create_token, verify_password, create_url_safe_token, decode_url_safe_token
 from datetime import timedelta, datetime
 from .dependencies import RefreshTokenBearer, AccessTokenBearer
 from fastapi.responses import JSONResponse
 from src.db.redis import add_jti_to_blocklist
 from .dependencies import get_user, RoleChecker
 from src.errors import UserAlreadyExists, UserNotFound, InvalidCredentials
+from src.email import mail, create_message
+from src.config import settings
 
 auth_router = APIRouter(
     prefix="/auth",
@@ -20,7 +22,15 @@ role_checker = RoleChecker(['admin', 'user'])
 REFRESH_TOKEN_EXPIRES = 2
 
 
-@auth_router.post("/signup", response_model=UserSchema, status_code=status.HTTP_201_CREATED)
+@auth_router.post("/send_email")
+async def send_email(recipients: EmailModel):
+    body = "<h1>This is a test email</h1>"
+    message = create_message(recipients.emails, "Test", body)
+    await mail.send_message(message)
+    return {"message": "Email sent"}
+
+
+@auth_router.post("/signup", status_code=status.HTTP_201_CREATED)
 async def create_user(data: UserCreateSchema, session: AsyncSession = Depends(get_session)):
     # data_dict = data.model_dump()
     # email_id = data_dict["email"]
@@ -29,7 +39,32 @@ async def create_user(data: UserCreateSchema, session: AsyncSession = Depends(ge
     if user_exist:
         raise UserAlreadyExists()
     new_user = await user_service.create_user(data, session)
-    return new_user
+
+    token = create_url_safe_token({"email": email_id})
+    link = f"http://{settings.DOMAIN}/api/v1/auth/verify/{token}"
+    html = f"""
+    <h1>Verify your Email</h1>
+    <p>Please click this <a href="{link}">link</a> to verify your email</p>
+    """
+
+    message = create_message([email_id], "Verify Your Email", html)
+    await mail.send_message(message)
+    return {
+        "message": "Verification email sent. Please verify your email",
+        "user": new_user
+    }
+
+
+@auth_router.get("/verify/{token}", status_code=status.HTTP_201_CREATED)
+async def verify(token: str, session: AsyncSession = Depends(get_session)):
+    data = decode_url_safe_token(token)
+    if not data:
+        raise InvalidCredentials()
+    user = await user_service.get_user_by_email(data['email'], session)
+    if not user:
+        raise UserNotFound()
+    await user_service.update_user(user, {"is_verified": True}, session)
+    return {"message": "Email verified successfully"}
 
 
 @auth_router.post("/login", status_code=status.HTTP_201_CREATED)
