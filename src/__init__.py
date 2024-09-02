@@ -22,6 +22,11 @@ app = FastAPI(
     version=version,
     title="Books API",
     description="A simple API to manage books",
+    docs_url=f"/api/{version}/docs",
+    redoc_url=f"/api/{version}/redocs",
+    contact={
+        "email":"rp@gml.com"
+    }
     # lifespan=life_span
 )
 

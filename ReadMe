@@ -9,3 +9,6 @@ MAIL_SERVER="localhost" #"smtp.gmail.com"
 MAIL_PORT=465 #587
 MAIL_FROM="no-reply@booker.com"
 MAIL_FROM_NAME="Booker"
+
+celery -A src.celery_task.c_app worker
+celery -A src.celery_task.c_app flower

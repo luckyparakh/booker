@@ -83,6 +83,11 @@ class AccountNotVerified(Exception):
     pass
 
 
+class PasswordMismatch(Exception):
+    "Password Mismatch"
+    pass
+
+
 def create_exception_handler(status_code: int, initial_detail: Any) -> Callable[[Request, Exception], JSONResponse]:
     """
     This function returns a callable function that can be used to handle exceptions
@@ -234,6 +239,17 @@ def register_all_errors(app: FastAPI):
                 "message": "Account Not verified",
                 "error_code": "account_not_verified",
                 "resolution": "Please check your email for verification details"
+            },
+        ),
+    )
+    app.add_exception_handler(
+        PasswordMismatch,
+        create_exception_handler(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            initial_detail={
+                "message": "Password Mismatch",
+                "error_code": "password_mismatch",
+                "resolution": "Please check your passwords"
             },
         ),
     )

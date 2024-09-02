@@ -40,3 +40,12 @@ class EmailModel(BaseModel):
     emails: List[str]
     # subject: str
     # body: str
+
+
+class ResetPasswordModel(BaseModel):
+    email: EmailStr = Field(max_length=40)
+
+
+class SetPasswordModel(BaseModel):
+    password: str = Field(min_length=6)
+    password_again: str = Field(min_length=6)
